@@ -26,9 +26,6 @@ namespace Json {
 
     std::string JsonArray::serialize(int indent_level, int indent_size) const {
         std::ostringstream oss;
-        if (indent_size > 0) {
-            oss << std::string(indent_level * indent_size, ' ');
-        }
         oss << "[";
         for (size_t i = 0; i < values_.size(); ++i) {
             if (i > 0) oss << ",";
@@ -59,11 +56,6 @@ namespace Json {
 
     std::string JsonObject::serialize(int indent_level, int indent_size) const {
         std::ostringstream oss;
-        
-        if (indent_size > 0) {
-            oss << std::string(indent_level * indent_size, ' ');
-        }
-
         oss << "{";
         for (size_t i = 0; i < keys_.size(); ++i) {
             if (i > 0) oss << ",";
@@ -74,7 +66,7 @@ namespace Json {
             const std::string& key = keys_[i];
             oss << "\"" << key << "\":";
             if (indent_size > 0) oss << " ";
-            oss << values_.at(key)->serialize(indent_level, indent_size);
+            oss << values_.at(key)->serialize(indent_level + 1, indent_size);
         }
         if (indent_size > 0) {
             oss << "\n" << std::string(indent_level * indent_size, ' ');
