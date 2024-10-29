@@ -6,6 +6,10 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <cctype>
+#include <memory>
 
 #ifndef Json_Default_IndentLevel
 #define Json_Default_IndentLevel 0
@@ -16,7 +20,6 @@
 #endif
 
 namespace Json {
-
     class JsonArray;
     class JsonObject;
 
@@ -53,7 +56,7 @@ namespace Json {
         Type type() const override { return Type::Boolean; }
         std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const override { return value_ ? "true" : "false"; }
         bool asBoolean() const override { return value_; } 
-    private:
+    protected:
         bool value_;
     };
 
@@ -63,7 +66,7 @@ namespace Json {
         Type type() const override { return Type::Number; }
         std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const override;
         double asNumber() const override { return value_; } 
-    private:
+    protected:
         double value_;
     };
 
@@ -73,7 +76,7 @@ namespace Json {
         Type type() const override { return Type::String; }
         std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const override;
         std::string asString() const override { return value_; }
-    private:
+    protected:
         std::string value_;
     };
 
@@ -86,7 +89,7 @@ namespace Json {
         std::shared_ptr<JsonArray> asArray() const override { return std::const_pointer_cast<JsonArray>(shared_from_this()); }
         std::shared_ptr<JsonValue> get(size_t index) const;
         const std::vector<std::shared_ptr<JsonValue>>& values() const { return values_; }
-    private:
+    protected:
         std::vector<std::shared_ptr<JsonValue>> values_;
     };
 
@@ -102,12 +105,30 @@ namespace Json {
 
         std::shared_ptr<JsonValue> get(const std::string& key);
 
-    private:
+    protected:
         std::unordered_map<std::string, std::shared_ptr<JsonValue>> values_;
         std::vector<std::string> keys_;
     };
+    
+    class Parser {
+    public:
+        explicit Parser(const std::string& json);
 
-    std::shared_ptr<JsonValue> parse(const std::string& json);
+        std::shared_ptr<JsonValue> parse();
+
+    protected:
+        std::string json_;
+        size_t index_;
+
+        void skipWhitespace();
+        std::shared_ptr<JsonValue> parseValue();
+        std::shared_ptr<JsonObject> parseObject();
+        std::shared_ptr<JsonArray> parseArray();
+        std::string parseString();
+        double parseNumber();
+        bool parseBoolean();
+        void parseNull();
+    };
 }
 
 #endif // JSON_H
