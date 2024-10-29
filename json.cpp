@@ -5,36 +5,79 @@
 
 namespace Json {
 
-    std::string JsonNumber::serialize() const {
+    std::string JsonNumber::serialize(int indent_level, int indent_size) const {
         std::ostringstream oss;
         oss << value_;
         return oss.str();
     }
 
-    std::string JsonString::serialize() const {
+    std::string JsonString::serialize(int indent_level, int indent_size) const {
         std::ostringstream oss;
         oss << "\"" << value_ << "\"";
         return oss.str();
     }
 
-    std::string JsonArray::serialize() const {
+    std::shared_ptr<JsonValue> JsonArray::get(size_t index) const {
+        if (index < values_.size()) {
+            return values_[index];
+        }
+        throw std::out_of_range("Index out of range");
+    }
+
+    std::string JsonArray::serialize(int indent_level, int indent_size) const {
         std::ostringstream oss;
+        if (indent_size > 0) {
+            oss << std::string(indent_level * indent_size, ' ');
+        }
         oss << "[";
         for (size_t i = 0; i < values_.size(); ++i) {
             if (i > 0) oss << ",";
-            oss << values_[i]->serialize();
+            if (indent_size > 0) oss << "\n";
+            if (indent_size > 0) {
+                oss << std::string((indent_level + 1) * indent_size, ' ');
+            }
+            oss << values_[i]->serialize(indent_level + 1, indent_size);
+        }
+        if (indent_size > 0) {
+            oss << "\n" << std::string(indent_level * indent_size, ' ');
         }
         oss << "]";
         return oss.str();
     }
 
-    std::string JsonObject::serialize() const {
+    void JsonObject::add(const std::string& key, std::shared_ptr<JsonValue> value) {
+        if (values_.find(key) == values_.end()) {
+            keys_.push_back(key);
+        }
+        values_[key] = std::move(value);
+    }
+
+    std::shared_ptr<JsonValue> JsonObject::get(const std::string& key) {
+        auto it = values_.find(key);
+        return (it != values_.end()) ? it->second : nullptr;
+    }
+
+    std::string JsonObject::serialize(int indent_level, int indent_size) const {
         std::ostringstream oss;
+        
+        if (indent_size > 0) {
+            oss << std::string(indent_level * indent_size, ' ');
+        }
+
         oss << "{";
         for (size_t i = 0; i < keys_.size(); ++i) {
             if (i > 0) oss << ",";
+            if (indent_size > 0) oss << "\n";
+            if (indent_size > 0) {
+                oss << std::string((indent_level + 1) * indent_size, ' ');
+            }
             const std::string& key = keys_[i];
-            oss << "\"" << key << "\":" << values_.at(key)->serialize();
+            oss << "\"" << key << "\":";
+            if (indent_size > 0) oss << " ";
+            oss << values_.at(key)->serialize(indent_level, indent_size);
+        }
+        if (indent_size > 0) {
+            oss << "\n" << std::string(indent_level * indent_size, ' ');
         }
         oss << "}";
         return oss.str();

@@ -7,6 +7,14 @@
 #include <memory>
 #include <iostream>
 
+#ifndef Json_Default_IndentLevel
+#define Json_Default_IndentLevel 0
+#endif
+
+#ifndef Json_Default_IndentSize
+#define Json_Default_IndentSize  0
+#endif
+
 namespace Json {
 
     class JsonArray;
@@ -25,7 +33,7 @@ namespace Json {
     public:
         virtual ~JsonValue() = default;
         virtual Type type() const = 0;
-        virtual std::string serialize() const = 0;
+        virtual std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const = 0;
         virtual std::string asString() const { throw std::runtime_error("Not a string"); }
         virtual double asNumber() const { throw std::runtime_error("Not a number"); }
         virtual bool asBoolean() const { throw std::runtime_error("Not a boolean"); }
@@ -36,14 +44,14 @@ namespace Json {
     class JsonNull : public JsonValue {
     public:
         Type type() const override { return Type::Null; }
-        std::string serialize() const override { return "null"; }
+        std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const override { return "null"; }
     };
 
     class JsonBoolean : public JsonValue {
     public:
         explicit JsonBoolean(bool value) : value_(value) {}
         Type type() const override { return Type::Boolean; }
-        std::string serialize() const override { return value_ ? "true" : "false"; }
+        std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const override { return value_ ? "true" : "false"; }
         bool asBoolean() const override { return value_; } 
     private:
         bool value_;
@@ -53,7 +61,7 @@ namespace Json {
     public:
         explicit JsonNumber(double value) : value_(value) {}
         Type type() const override { return Type::Number; }
-        std::string serialize() const override;
+        std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const override;
         double asNumber() const override { return value_; } 
     private:
         double value_;
@@ -63,7 +71,7 @@ namespace Json {
     public:
         explicit JsonString(const std::string& value) : value_(value) {}
         Type type() const override { return Type::String; }
-        std::string serialize() const override;
+        std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const override;
         std::string asString() const override { return value_; }
     private:
         std::string value_;
@@ -74,14 +82,9 @@ namespace Json {
         JsonArray() = default;
         void add(std::shared_ptr<JsonValue> value) { values_.emplace_back(std::move(value)); }
         Type type() const override { return Type::Array; }
-        std::string serialize() const override;
+        std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const override;
         std::shared_ptr<JsonArray> asArray() const override { return std::const_pointer_cast<JsonArray>(shared_from_this()); }
-        std::shared_ptr<JsonValue> get(size_t index) const {
-            if (index < values_.size()) {
-                return values_[index];
-            }
-            throw std::out_of_range("Index out of range");
-        }
+        std::shared_ptr<JsonValue> get(size_t index) const;
         const std::vector<std::shared_ptr<JsonValue>>& values() const { return values_; }
     private:
         std::vector<std::shared_ptr<JsonValue>> values_;
@@ -91,21 +94,13 @@ namespace Json {
     public:
         JsonObject() = default;
 
-        void add(const std::string& key, std::shared_ptr<JsonValue> value) {
-            if (values_.find(key) == values_.end()) {
-                keys_.push_back(key);
-            }
-            values_[key] = std::move(value);
-        }
+        void add(const std::string& key, std::shared_ptr<JsonValue> value);
 
         Type type() const override { return Type::Object; }
 
-        std::string serialize() const override;
+        std::string serialize(int indent_level = Json_Default_IndentLevel, int indent_size = Json_Default_IndentSize) const override;
 
-        std::shared_ptr<JsonValue> get(const std::string& key) const {
-            auto it = values_.find(key);
-            return (it != values_.end()) ? it->second : nullptr;
-        }
+        std::shared_ptr<JsonValue> get(const std::string& key);
 
     private:
         std::unordered_map<std::string, std::shared_ptr<JsonValue>> values_;
